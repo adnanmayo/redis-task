@@ -11,23 +11,32 @@ const { v4: uuidv4 } = require('uuid')
  * @returns {Promise<Target>}
  */
 const createTarget = async (targetBody) => {
-    return new Promise((resolve, reject) => {
-        let id = uuidv4()
+
+
+    // const data = await getTargetList();
+    // console.log({data})
+
+    return new Promise( (resolve, reject) => {
+    
+        id = Date.now();
         let url = targetBody.url
         let value = targetBody.value
         let maxAcceptsPerDay = targetBody.maxAcceptsPerDay
-        let accept = targetBody.accept
+        let acceptGeoState = JSON.stringify(targetBody.accept.geoState.$in)
+        let acceptHour = JSON.stringify(targetBody.accept.hour.$in)
         
+
         client.hmset(id, [
             'url', url,
             'value', value,
             'maxAcceptsPerDay', maxAcceptsPerDay,
-            'accept', accept
+            'acceptGeoState', acceptGeoState,
+            'acceptHour', acceptHour,
         ], (err, reply) => {
             if (err) {
                 reject(err)
             }
-            resolve(reply)
+            resolve(targetBody)
         })
     })
 }
@@ -42,10 +51,10 @@ const getTargetList = async () => {
         client.keys('*', (err, id) => {
             // let multi = client.multi()
             let keys = Object.keys(id)
-            let i = 0
+            let i = 0;
             keys.forEach((l) => {
                 client.hgetall(id[l], (e, o) => {
-                    i++
+                    i++;
                     if (e) { reject(e) } else {
                         temp_data = { 'id': id[l], 'data': o }
                         return_dataset.push(temp_data)
@@ -65,6 +74,7 @@ const getTargetList = async () => {
  * @returns {Promise<Target>}
  */
 const getTargetById = async (id) => {
+
     return new Promise((resolve, reject) => {
         let result = []
         // get all values associated with the key as id
@@ -77,6 +87,8 @@ const getTargetById = async (id) => {
     })
 }
 
+
+
 /**
  * Update Target by id
  * @param {ObjectId} TargetId
@@ -88,14 +100,15 @@ const updateTargetById = async (TargetId, updateBody) => {
         let url = updateBody.url
         let value = updateBody.value
         let maxAcceptsPerDay = updateBody.maxAcceptsPerDay
-        let accept = updateBody.accept
-
+        let acceptGeoState = JSON.stringify(updateBody.accept.geoState.$in)
+        let acceptHour = JSON.stringify(updateBody.accept.hour.$in)
         // make id the key and assign the id to the other Parameters
         client.hmset(TargetId, [
             'url', url,
             'value', value,
             'maxAcceptsPerDay', maxAcceptsPerDay,
-            // 'accept', accept
+            'acceptGeoState', acceptGeoState,
+            'acceptHour', acceptHour,
         ], (err, reply) => {
             if (err) {
                 reject(err)
@@ -130,7 +143,50 @@ const deleteTargetById = async (TargetId) => {
 const makeDecision = async (requestBody) => {
     return new Promise((resolve, reject) => {
 
+        const targetFound =  false;
 
+        getTargetList().then((data) => {
+            let targets = data.targets
+            targets.forEach(element => {
+                console.log(element.data)
+                
+                const target =  element.data;
+
+                const targetData = {
+                    "url": "",
+                    "value": "",
+                    "maxAcceptsPerDay": 0,
+                    "accept": {
+                        "geoState": {
+                            "$in": []
+                        },
+                            "hour": {
+                            "$in": [ ]
+                            }
+                    }
+                }
+                if(element.data.acceptGeoState.includes(requestBody.geoState)
+                     && element.data.maxAcceptsPerDay > 0 && !targetFound ) {
+                    targetData['accept']['geoState']['$in'] = JSON.parse(target['acceptGeoState']);
+                    targetData['accept']['hour']['$in'] = JSON.parse(target['acceptHour']);
+                    targetData['maxAcceptsPerDay'] =  target['maxAcceptsPerDay']-1;
+                    targetData['url'] = target['url'];
+                    targetData['value'] = target['value'];
+                    updateTargetById(element.id, targetData).then((data) => {
+                        targetFound =  true;
+                        resolve(data);
+                    })
+                }
+            });
+
+            if(!targetFound){
+            reject(new ApiError(httpStatus.NOT_FOUND, 'Target not found'));
+
+            }
+
+
+
+        })
     })
 }
 

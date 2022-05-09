@@ -7,6 +7,8 @@
 // console.log(name, 'listening on port', port)
 
 const express = require('express');
+var http = require('http')
+
 const cors = require('cors');
 const app = express();
 const routes = require('./src/routes');
@@ -27,3 +29,10 @@ app.use('/', routes);
 app.listen(port, () => {
     console.log(`app listening at http://localhost:${port}`)
 })
+
+
+
+
+
+
+// module.exports = server;

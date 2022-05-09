@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "nyc ava && npm run deps && standard",
+    "test": "jest",
     "deps": "depcheck ."
   },
   "keywords": [],
@@ -15,10 +15,12 @@
     "ava": "^3.13.0",
     "depcheck": "^1.2.0",
     "fakeredis": "^2.0.0",
+    "jest": "^28.1.0",
     "nodemon": "^2.0.4",
     "nyc": "^15.1.0",
     "servertest": "^1.2.1",
-    "standard": "^14.3.4"
+    "standard": "^14.3.4",
+    "supertest": "^6.2.3"
   },
   "dependencies": {
     "body-parser": "^1.20.0",
@@ -42,5 +44,11 @@
   "engines": {
     "node": "12",
     "npm": "6"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
   }
 }
